@@ -58,34 +58,65 @@ _zsh_highlight()
     local -a selected_highlighters
     local cache_place
 
+    echo "start of _zsh_highlight()" >> /tmp/qqq.txt
+    echo "  region_highlight is '$region_highlight' " >> /tmp/qqq.txt
+    echo "start of selecting highlighters " >> /tmp/qqq.txt
+
     # Select which highlighters in ZSH_HIGHLIGHT_HIGHLIGHTERS need to be invoked.
     local highlighter; for highlighter in $ZSH_HIGHLIGHT_HIGHLIGHTERS; do
 
       # If highlighter needs to be invoked
       if "_zsh_highlight_${highlighter}_highlighter_predicate"; then
 
+        echo " selected $highlighter " >> /tmp/qqq.txt
+
         # Mark the highlighter as selected for update.
         selected_highlighters+=($highlighter)
 
         # Remove what was stored in its cache from region_highlight.
         cache_place="_zsh_highlight_${highlighter}_highlighter_cache"
+
+        echo "  Current $highlighter cache is '${(PA)cache_place}' " >> /tmp/qqq.txt
+
         typeset -ga ${cache_place}
+
+        echo "  region_highlight before remove of $highlighter '$region_highlight'" >> /tmp/qqq.txt
         [[ ${#${(P)cache_place}} -gt 0 ]] && [[ ! -z ${region_highlight-} ]] && region_highlight=(${region_highlight:#(${(P~j.|.)cache_place})})
+        echo "  region_highlight after remove of $highlighter '$region_highlight'" >> /tmp/qqq.txt
 
       fi
     done
 
+    echo "got $selected_highlighters highlighters " >> /tmp/qqq.txt
+    echo "start of processing highlighters " >> /tmp/qqq.txt
+
     # Invoke each selected highlighter and store the result in its cache.
     local -a region_highlight_copy
     for highlighter in $selected_highlighters; do
+
+      echo " processing $highlighter " >> /tmp/qqq.txt
+
       cache_place="_zsh_highlight_${highlighter}_highlighter_cache"
       region_highlight_copy=($region_highlight)
+
+      echo "  region_highlight before call to $highlighter '$region_highlight'" >> /tmp/qqq.txt
+
       {
         "_zsh_highlight_${highlighter}_highlighter"
+        echo "  region_highlight after call to $highlighter '$region_highlight'" >> /tmp/qqq.txt
       } always  {
+        echo "  $highlighter cache was '${(P)cache_place}' " >> /tmp/qqq.txt
         [[ ! -z ${region_highlight-} ]] && : ${(PA)cache_place::=${region_highlight:#(${(~j.|.)region_highlight_copy})}}
+        echo "  $highlighter cache now '${(P)cache_place}' " >> /tmp/qqq.txt
       }
+
+      echo " end precessing $highlighter " >> /tmp/qqq.txt
+
     done
+
+    echo "  region_highlight on exit of _zsh_highlight is  '$region_highlight'" >> /tmp/qqq.txt
+    echo "exit of _zsh_highlight " >> /tmp/qqq.txt
+    echo " ======================================= " >> /tmp/qqq.txt
 
   } always {
     _ZSH_HIGHLIGHT_PRIOR_BUFFER=$BUFFER
